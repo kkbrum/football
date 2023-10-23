@@ -1,5 +1,4 @@
-# This script is used for simulations of the triples design for the football manuscript
-# This is supplementary script 1 of 2 for this project
+# This script is used for simulations of the triples design for the football appendix
 
 
 # 0. Preparation ---- ################################
