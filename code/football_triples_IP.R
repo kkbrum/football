@@ -1,5 +1,4 @@
 # This script is used to try the triples integer program for the football data
-# This is supplementary script 2 of 2 for this project
 # This script should be run once for each stratum in 1, 3, 4, 5, 6, 7, 8
 # Strata 5 and 8 are very resource intensive and will likely not finish
 ist <- 1
