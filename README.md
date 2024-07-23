@@ -18,9 +18,9 @@ library(triplesmatch)
 
 The code folder contains four files. They should be run in the following order:
 
-1. football_prep.R: This file loads in the data obtained from the Wisconsin Longitudinal Study and implements the eligibility and exclusion criteria for our study.
-2. football_triples_matching.R: This file loads in the prepared data and implements the triples match. Additionally generates figures 1-2 and tables 1-3 of the paper. Finally, creates coherent ranks for matched individuals.
-3. football_analysis.R: This file creates figure 4 and implements the final analysis of the matched individuals. 
+1. football_prep.R: This file loads in the data obtained from the Wisconsin Longitudinal Study and implements the eligibility and exclusion criteria for our study. Also estimates the propensity score.
+2. football_triples_matching.R: This file loads in the prepared data and implements the triples match. Additionally generates figures 1-2 and tables 1-3 of the paper and tables 4-5 of the appendix. Finally, creates coherent ranks for matched individuals.
+3. football_analysis.R: This file creates figure 4 of the main paper and figure 1 of the appendix and then implements the final analysis of the matched individuals. 
 4. football_triples_IP.R: This file attempts to conduct the triples match using an integer program; this is not relevant to the main analysis and is discussed more in the appendix of the paper. Recreates table 3 of the appendix.
 
 The simulations folder contains three files.
