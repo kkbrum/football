@@ -10,7 +10,6 @@ library(xtable)
 
 load("football_data_prepped_w_outcomes.RData")
 load("football_match_081323.RData")
-install.packages("triplesmatch")
 library(triplesmatch)
 
 z <- z[used]
@@ -23,7 +22,7 @@ mtype <- factor(mtype, levels = c(1, 0), labels = c("1-2", "2-1"))
 zfactor <- factor(z, levels = c(1, 0), labels = c("T", "C"))
 
 setEPS()
-postscript("fig4.eps", width = 10.0, height = 6.0)
+postscript("fig4v2.eps", width = 11.0, height = 6.0)
 
 par(mfrow = c(1,4))
 boxplot(outcomes$ticsm_adj ~ zfactor + mtype, 
@@ -40,16 +39,61 @@ boxplot(outcomes$coh ~ zfactor + mtype,
         main="(iii) Coherent",las=1,
         names = paste(rep(levels(zfactor), 2), 
                       rep(levels(mtype), each = 2), sep = " "))
-boxplot(c(outcomes$coh[z == 1 & mtype == "1-2"], 
-          rep(outcomes$coh[z == 1 & mtype == "2-1"], 2)),
+boxplot(outcomes$coh[z == 1],
         c(outcomes$coh[z == 0 & mtype == "1-2"], 
-          rep(outcomes$coh[z == 0 & mtype == "2-1"], 2)), 
+          rep(outcomes$coh[z == 0 & mtype == "2-1"], 4)), 
         main="(iv) Weighted", 
         ylab="Coherent Ranks",
         names=c("T","C"), xlab="Group"
 )
 
 dev.off()
+
+
+# Effect modification by school government participation
+
+covs_raw_used <- covs_raw[used, ]
+
+setEPS()
+postscript("figA1v2.eps", width = 11.0, height = 6.0)
+
+par(mfrow = c(1,3))
+
+boxplot(outcomes$ticsm_adj[z == 1 & covs_raw_used$schgovt == 0],
+        c(outcomes$ticsm_adj[z == 0 & mtype == "1-2" & covs_raw_used$schgovt == 0], 
+          rep(outcomes$ticsm_adj[z == 0 & mtype == "2-1" & covs_raw_used$schgovt == 0], 4)), 
+        outcomes$ticsm_adj[z == 1 & covs_raw_used$schgovt == 1],
+        c(outcomes$ticsm_adj[z == 0 & mtype == "1-2" & covs_raw_used$schgovt == 1], 
+          rep(outcomes$ticsm_adj[z == 0 & mtype == "2-1" & covs_raw_used$schgovt == 1], 4)),
+        main="TICSm Score", 
+        ylab="TICSm Score",
+        names=c("T - G","C - G","T + G", "C + G"), xlab="Group"
+)
+
+boxplot(outcomes$ab[z == 1 & covs_raw_used$schgovt == 0],
+        c(outcomes$ab[z == 0 & mtype == "1-2" & covs_raw_used$schgovt == 0], 
+          rep(outcomes$ab[z == 0 & mtype == "2-1" & covs_raw_used$schgovt == 0], 4)), 
+        outcomes$ab[z == 1 & covs_raw_used$schgovt == 1],
+        c(outcomes$ab[z == 0 & mtype == "1-2" & covs_raw_used$schgovt == 1], 
+          rep(outcomes$ab[z == 0 & mtype == "2-1" & covs_raw_used$schgovt == 1], 4)),
+        main="Aberrant Ranks", 
+        ylab="Aberrant Ranks",
+        names=c("T - G","C - G","T + G", "C + G"), xlab="Group"
+)
+
+boxplot(outcomes$coh[z == 1 & covs_raw_used$schgovt == 0],
+        c(outcomes$coh[z == 0 & mtype == "1-2" & covs_raw_used$schgovt == 0], 
+          rep(outcomes$coh[z == 0 & mtype == "2-1" & covs_raw_used$schgovt == 0], 4)), 
+        outcomes$coh[z == 1 & covs_raw_used$schgovt == 1],
+        c(outcomes$coh[z == 0 & mtype == "1-2" & covs_raw_used$schgovt == 1], 
+          rep(outcomes$coh[z == 0 & mtype == "2-1" & covs_raw_used$schgovt == 1], 4)),
+        main="Coherent Ranks", 
+        ylab="Coherent Ranks",
+        names=c("T - G","C - G","T + G", "C + G"), xlab="Group"
+)
+
+dev.off()
+
 
 # 2. Tests for effects ---- ####################################################
 
