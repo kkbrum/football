@@ -409,6 +409,24 @@ logit_model <- glm(z ~ ., data = covs_imputed, family = binomial())
 logit_ps <- predict(logit_model, type = "response")
 rm(logit_model)
 
+# Form other propensity scores as robustness checks
+# gbm, ridge, random forest, BART
+
+set.seed(710)
+
+gbm_model <- gbm::gbm(z ~ ., data = covs_imputed)
+gbm_ps <- predict(gbm_model, type = 'response')
+
+ridge_model <- glmnet::cv.glmnet(x = as.matrix(covs_imputed), y = z, alpha = 0)
+ridge_ps <- predict(ridge_model, newx = as.matrix(covs_imputed))
+
+rf_model <- randomForest::randomForest(as.factor(z) ~ ., data = covs_imputed)
+rf_ps <- predict(rf_model, type = "prob")[, 2]
+
+bart_model <- dbarts::bart2(z ~ ., data = covs_imputed)
+bart_ps <- fitted(bart_model)
+
+rm(gbm_model, ridge_model, rf_model, bart_model)
 
 
 # 7. Marginal TICSm/ diagnosis plots ---- ######################################
@@ -439,10 +457,10 @@ outcome_names <- c("ticsm_raw", "ticsm_adj", "diagnosis",
                    "periodont", "cancer")
 outcomes <- sample_data[, outcome_names]
 
-save.image("football_data_prepped_w_outcomes.RData")
+save.image("football_data_prepped_w_outcomes_r1.RData")
 
 sample_data <- sample_data[, ! names(sample_data) %in% outcome_names]
 rm(outcomes, outcome_names)
 
-save.image("football_data_prepped_no_outcomes.RData")
+save.image("football_data_prepped_no_outcomes_r1.RData")
 
