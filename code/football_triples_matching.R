@@ -3,40 +3,68 @@
 #      (and creates relevant figures and tables of their marginal distributions)
 # This is script 2 of 3 for this project
 
-# 0. Read in the data ---- #####################################################
-install.packages("triplesmatch")
+# 0. Read in the data, get set up with propensity scores ---- ##################
 library(triplesmatch)
-load("football_data_prepped_no_outcomes.RData")
+load("football_data_prepped_no_outcomes_r1.RData")
 
+# Note we will be using logit_ps for the bulk of the analyses; 
+#     the other propensity scores are for robustness checks only
 
-# 1. Create 8 strata ---- ######################################################
-# Based on propensity score quartile x participation in school government
-ps_quart <-  cut_quant(v = logit_ps,  q = c((1:3) / 4),  int = TRUE)
-st_factor <-  factor(ps_quart):factor(covs_imputed$schgovt)
-st <-  as.integer(st_factor)
-names(st) <- names(z)
+prop_score_list <- list(gbm_ps = gbm_ps, ridge_ps = ridge_ps,
+                        rf_ps = rf_ps, bart_ps = bart_ps,
+                        logit_ps = logit_ps)
+rm(gbm_ps, rf_ps, bart_ps, ridge_ps)
+ps_quart_list <- list()
+st_list <- list()
+m_list <- list()
 
+for (prop_score_name in c('gbm_ps', 'ridge_ps', 'rf_ps', 'bart_ps', 'logit_ps')) {
+  
+  prop_score <- prop_score_list[[prop_score_name]]
+  names(prop_score) <- names(logit_ps)
+  
+  # 1. Create 8 strata ---- ####################################################
+  # Based on propensity score quartile x participation in school government
+  ps_quart_temp <-  cut_quant(v = prop_score,  q = c((1:3) / 4),  int = TRUE)
+  ps_quart_list[[prop_score_name]] <- ps_quart_temp
+  st_factor_temp <-  factor(ps_quart_temp):factor(covs_imputed$schgovt)
+  table(st_factor_temp)
+  st_factor_temp <- droplevels(st_factor_temp)
+  st_temp <-  as.integer(st_factor_temp)
+  names(st_temp) <- names(z)
+  st_list[[prop_score_name]] <- st_temp
+  
+  # 2. Make distance matrix  ---- ################################################
+  
+  # Discretize Duncan socioeconomic index of father's job into 3 categories
+  ses3 <-  cut_quant(covs_imputed$bmfoc2u, q = (1:2) / 3)
+  # Discretize propensity score into 8 categories
+  prop_score8 <-  cut_quant(prop_score, (1:7) / 8)
+  # Look at covariates of HS rank, Father's education, Mother's education, IQ,
+  #     propensity score, 3 categories of Duncan SEI of father's job,
+  #     and 8 categories of propensity score
+  lcovs_temp <-  cbind(covs_imputed[, c("hsrankq", "bmfaedu", "bmmaedu", "gwiiq_bm")],
+                       prop_score, ses3, prop_score8)
+  row.names(lcovs_temp) <- row.names(covs_imputed)
+  # Use those covs for the distance matrices
+  cost_temp <-  dist_mahal(X = lcovs_temp, st = st_temp, z = z, rank_based = FALSE)
+  
+  # 3. Run the triples algorithm  ---- ###########################################
+  
+  m_list[[prop_score_name]] <-  triples(cost_temp, z, st_temp)
+  
+  if (prop_score_name == "logit_ps") {
+    cost <- cost_temp
+    st <- st_temp
+    lcovs <- lcovs_temp
+    ps_quart <- ps_quart_temp
+    st_factor <- st_factor_temp
+    m <- m_list[[prop_score_name]]
+  }
+  
+}
 
-# 2. Make distance matrix  ---- ################################################
-
-# Discretize Duncan socioeconomic index of father's job into 3 categories
-ses3 <-  cut_quant(covs_imputed$bmfoc2u, q = (1:2) / 3)
-# Discretize propensity score into 8 categories
-logit_ps8 <-  cut_quant(logit_ps, (1:7) / 8)
-# Look at covariates of HS rank, Father's education, Mother's education, IQ,
-#     propensity score, 3 categories of Duncan SEI of father's job,
-#     and 8 categories of propensity score
-lcovs <-  cbind(covs_imputed[, c("hsrankq", "bmfaedu", "bmmaedu", "gwiiq_bm")],
-                logit_ps, ses3, logit_ps8)
-rm(ses3, logit_ps8)
-row.names(lcovs) <- row.names(covs_imputed)
-# Use those covs for the distance matrices
-cost <-  dist_mahal(X = lcovs, st = st, z = z, rank_based = FALSE)
-
-
-# 3. Run the triples algorithm  ---- ###########################################
-
-m <-  triples(cost, z, st)
+rm(ses3, prop_score8, prop_score, ps_quart_temp, st_factor_temp, st_temp, lcovs_temp, cost_temp)
 
 # What is the overall objective achieved? 1495.00
 m$obj
@@ -85,8 +113,9 @@ dev.off()
 library(xtable)
 X<-cbind(logit_ps,ps_quart,covs_raw)
 bal <-  make_bal_tab(X = X, z = z, m = m$m,
-                   cov_names = c("Propensity Score", "PS-Strata", cov_names))
-bal <-  bal[order( - abs(bal[, 4])), ]
+                     cov_names = c("Propensity Score", "PS-Strata", cov_names))[, -4]
+bal_order <- order( - abs(bal[, 4]))
+bal <-  bal[bal_order, ]
 rownames(bal)[c(1, 2, 3, 6, 15, 24, 28, 38)] <- paste0("\\textbf{", rownames(bal)[c(1, 2, 3, 6, 15, 24, 28, 38)], "}")
 print(xtable(bal, digits=c(0, 2, 2, 2, 2, 2),
              caption = "Covariate balance before/after matching.  
@@ -99,6 +128,42 @@ print(xtable(bal, digits=c(0, 2, 2, 2, 2, 2),
       add.to.row = list(pos = list(0), command = "& $T$ & $Cb$ & $Cmw$ & $Db$ & $Dmw$ \\\\"),
       include.colnames = FALSE,
       sanitize.rownames.function = identity)
+
+#### Table A4: Covariate balance for different propensity scores ----
+
+bal_by_ps <- matrix(NA, nrow = nrow(bal), ncol = 5,
+                    dimnames = list(rownames(bal),
+                                    names(prop_score_list)))
+for (prop_score_name in c("gbm_ps", "ridge_ps", "rf_ps", "bart_ps", "logit_ps")) {
+  X_temp <- cbind(prop_score_list[[prop_score_name]], ps_quart_list[[prop_score_name]], covs_raw)
+  bal_temp <-  make_bal_tab(X = X_temp, z = z, m = m_list[[prop_score_name]]$m,
+                            cov_names = c("Propensity Score", "PS-Strata", cov_names))
+  bal_temp <- bal_temp[bal_order, ]
+  bal_by_ps[, prop_score_name] <- bal_temp[, 6]
+}
+rm(X_temp, bal_temp)
+print(xtable(bal_by_ps, digits=c(0, 2, 2, 2, 2, 2),
+             caption = "Covariate balance after matching using five different propensity score estimation techniques.  
+             Values shown are standardized mean differences after matching, corresponding to the final column
+             of Table 1 in the main paper."),
+      caption.placement = "top",
+      add.to.row = list(pos = list(0), command = "& GBM & Ridge &
+                        Random forest & BART & Logit \\\\"),
+      include.colnames = FALSE,
+      sanitize.rownames.function = identity)
+
+#### Table A5: 5-number summaries of absolute values in Table A4 ----
+
+bal_summary <- t(apply(bal_by_ps, 2, function(x) quantile(abs(x))))
+rownames(bal_summary) <- c("GBM", "Ridge", 
+                           "Random forest", "BART", "Logit")
+colnames(bal_summary) <- c("Min", "Quartile-1", "Median", "Quartile-3", "Max")
+print.xtable(xtable(bal_summary, digits = 3, 
+                    caption = "Five number summaries of 51 absolute standardized differences in means for 51 covariates 
+                    when triples matching is applied using five different methods of estimating the propensity score.  
+                    Although no method performed poorly, the linear logit model fitted by maximum likelihood produced 
+                    the smallest absolute standardized differences in means in aggregate.", 
+                    label = "PScomparison2"), caption.placement = "top")
 
 #### Tables 2 and 3: Various counts ----
 
@@ -178,9 +243,6 @@ print(xtable(rbind(temp2[1:2, ], temp3), digits = 0,
                         command = c("Stratum & Q1 & Q2 & Q3 $-$ G & Q3 $+$ G & Q4 $-$ G & Q4 $+$ G & Total \\\\ \n")))
 
 
-
-
-
 rm(bal, temp, temp2, temp3, triple_counts, bk, cov,
    matched_control, matched_football, matched_total,
    mck, mtk, supply, tab, tab2, ycov, ycovs)
@@ -196,6 +258,7 @@ load("football_data_prepped_w_outcomes.RData")
 rm(z)
 
 # Reduce down to only matched individuals
+outcomes_full <- outcomes
 outcomes <- outcomes[used, ]
 
 
