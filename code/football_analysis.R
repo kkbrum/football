@@ -8,7 +8,7 @@ library(xtable)
 
 # 0. Load data ---- ############################################################
 
-load("football_data_prepped_w_outcomes.RData")
+load("football_data_prepped_w_outcomes_r1.RData")
 load("football_match_081323.RData")
 library(triplesmatch)
 
