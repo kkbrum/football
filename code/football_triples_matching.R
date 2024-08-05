@@ -252,7 +252,7 @@ rm(bal, temp, temp2, temp3, triple_counts, bk, cov,
 
 # Before doing the analysis, we can look at marginal outcomes
 # Load in outcome data
-load("football_data_prepped_w_outcomes.RData")
+load("football_data_prepped_w_outcomes_r1.RData")
 
 # Remove treated vector since we can't use it
 rm(z)
