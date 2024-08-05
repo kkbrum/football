@@ -6,7 +6,7 @@ ist <- 1
 # 0. Read in the data ---- #####################################################
 install.packages("triplesmatch")
 library(triplesmatch)
-load("football_data_prepped_no_outcomes.RData")
+load("football_data_prepped_no_outcomes_r1.RData")
 load("football_match_081323.RData")
 
 # 1. Attempt integer program for triples match  ---- ###########################
